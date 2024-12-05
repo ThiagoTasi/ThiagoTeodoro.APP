@@ -1,108 +1,117 @@
-﻿using MySqlX.XDevAPI;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using ThiagoTeodoroClass;
-using static Mysqlx.Notice.Warning.Types;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ThiagoTeodoroClass
 {
     public class Encomenda
     {
-        public int IdCliente { get; set; }
-        public string Data_encomenda { get; set; }
+        public int IdEncomenda { get; set; }
+        Cliente cliente { get; set; }
+        public DateTime Data_encomenda { get; set; }
         public string Status { get; set; }
-        public string Data_entrega { get; set; }
+        public DateTime Data_entrega { get; set; }
+        public string Endereco { get; set; }
 
-        public void Inserir(string connectionString) 
+
+        public Encomenda()
         {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
 
-                using (var cmd = new SqlCommand("Insert into cliente (Nome, Email, Telefone) values (@nome, @email, @telefone)", connection))
-                {
-                    cmd.Parameters.AddWithValue("data_encomenda", Data_encomenda);
-                    cmd.Parameters.AddWithValue("status", Status);
-                    cmd.Parameters.AddWithValue("data_entrega", Data_entrega);
-
-                    IdCliente = cmd.ExecuteNonQuery();
-                }
-            }
+        }
+        public Encomenda(Cliente cliente, DateTime data_encomenda, string status, DateTime data_entrega, string endereco)
+        {
+            Cliente = cliente;
+            Data_encomenda = data_encomenda;
+            Status = status;
+            Data_entrega = data_entrega;
+            Endereco = endereco;
         }
 
-        public List<Cliente> ListarClientes(string connectionString)
+        public Encomenda(int idEncomenda, Cliente cliente, DateTime data_encomenda, string status, DateTime data_entrega, string endereco)
         {
-            List<Cliente> lista = new List<Cliente>();
+            IdEncomenda = idEncomenda;
+            Cliente = cliente;
+            Data_encomenda = data_encomenda;
+            Status = status;
+            Data_entrega = data_entrega;
+            Endereco = endereco;
+        }
 
-            using (var connection = new SqlConnection(connectionString))
+        public void Inserir()
+        {
+            var cmd = Banco.Abrir();
+            cmd.CommandType = System.Data.CommandType.Text;
+            cmd.CommandText = "encomenda_insert";
+            cmd.Parameters.AddWithValue("cliente_id", Cliente_id);
+            cmd.Parameters.AddWithValue("data_encomenda", Data_encomenda);
+            cmd.Parameters.AddWithValue("status", Status);
+            cmd.Parameters.AddWithValue("data_entrega", Data_entrega);
+
+            cmd.Connection.Close();
+
+        }
+        public static Encomenda ObterPorId(int id)
+        {
+            Encomenda encomenda = new();
+            var cmd = Banco.Abrir();
+            cmd.CommandText = $"select * from encomendas whre id = {id}";
+            var dr = cmd.ExecuteReader();
+            while (dr.Read())
             {
-                connection.Open();
-
-                using (var cmd = new SqlCommand("select * from cliente", connection))
-                {
-                    using (var dr = cmd.ExecuteReader())
-                    {
-                        while (dr.Read())
-                        {
-                            lista.Add(new Cliente
-                            {
-                                IdCliente = dr.GetInt32(0),
-                                Nome = dr.GetString(1),
-                                Email = dr.GetString(2),
-                                Telefone = dr.GetString(3)
-                            });
-                        }
-                    }
-                }
+                encomenda = new(
+                    dr.GetInt32(0),
+                    dr.GetInt32(1),
+                    dr.GetDate(2),
+                    dr.GetString(3),
+                    dr.GetData(4),
+                    dr.GetString(5)
+                    );
             }
-
-            return lista;
-            public void ConsultarPorId(int id, string connectionString)
+            return encomenda;
+        }
+        public static List<Encomenda> ObterPorLista()
+        {
+            List<Encomenda> encomendas = new();
+            var cmd = Banco.Abrir();
+            cmd.CommandText = $"select * from encomendas order by descricao asc";
+            var dr = cmd.ExecuteReader();
+            while (dr.Read())
             {
-                using (var connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
+                encomendas.Add(new(
+                   dr.GetInt32(0),
+                    dr.GetInt32(1),
+                    dr.GetDate(2),
+                    dr.GetString(3),
+                    dr.GetData(4),
+                    dr.GetString(5)
 
-                    using (var cmd = new SqlCommand("select * from cliente where id = @id", connection))
-                    {
-                        cmd.Parameters.AddWithValue("@id", id);
-
-                        using (var dr = cmd.ExecuteReader())
-                        {
-                            if (dr.Read())
-                            {
-                                IdCliente = dr.GetInt32(0);
-                                Nome = dr.GetString(1);
-                                Email = dr.GetString(2);
-                                Telefone = dr.GetString(3);
-                            }
-                        }
-                    }
-                }
+                    ));
             }
+            return encomendas;
+        }
+        public bool Alterar(Encomenda encomenda)
 
-            public void Alterar(string connectionString)
+        {
+            bool resposta = false;
+            var cmd = Banco.Abrir();
+            cmd.CommandType = System.Data.CommandType.Text;
+            cmd.CommandText = "encomenda_update";
+            cmd.Parameters.AddWithValue("cliente_id", Cliente_id);
+            cmd.Parameters.AddWithValue("data_encomenda", Data_encomenda);
+            cmd.Parameters.AddWithValue("status", Status);
+            cmd.Parameters.AddWithValue("data_entrega", Data_entrega);
+
+            if (cmd.ExecuteNonQuery() > 0)
             {
-                using (var connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    using (var cmd = new SqlCommand("update cliente set nome=@nome, email=@email, telefone=@telefone where id = @id", connection))
-                    {
-                        cmd.Parameters.AddWithValue("@id", IdCliente);
-                        cmd.Parameters.AddWithValue("@nome", Nome);
-                        cmd.Parameters.AddWithValue("@email", Email);
-                        cmd.Parameters.AddWithValue("@telefone", Telefone);
-
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                cmd.Connection.Close();
+                return true;
             }
+            return resposta;
         }
     }
 }

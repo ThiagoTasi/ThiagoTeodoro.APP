@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using ThiagoTeodoroClass;
@@ -10,6 +11,26 @@ namespace ThiagoTeodoroClass
 {
     public class Placa
     {
+        public int IdPlaca { get; set; }
+        public string Tipo { get; set; }
+        public string Tamanho { get; set; }
+        public string Preco { get; set; }
+
+
+        public Placa()
+        {
+           
+        }
+
+        public Placa(string tipo, string tamanho, string preco)
+        {
+
+            Tipo = tipo;
+            Tamanho = tamanho;
+            Preco = preco;
+
+        }
+
         public Placa(int idPlaca, string tipo, string tamanho, string preco)
         {
             IdPlaca = idPlaca;
@@ -18,53 +39,73 @@ namespace ThiagoTeodoroClass
             Preco = preco;
 
         }
-        public int IdPlaca { get; set; }
-        public string Tipo { get; set; }
-        public string Tamanho { get; set; }
-        public string Preco { get; set; }
 
         public void Inserir()
         {
-            var cmd = banco.Abrir();
-            cmd.CommandType = System.Data.CommandType.Text;
-            cmd.CommandText = "Insert placa values(int,'" + Tipo + "','" + Tamanho + "','" + Preco + "')";
-            IdPlaca = cmd.ExecuteNonQuery();
-            cmd.CommandText = "select @@identify";
 
+
+            var cmd = Banco.Abrir();
+            cmd.CommandType = System.Data.CommandType.Text;
+            cmd.CommandText = "placa_insert";
+            cmd.Parameters.AddWithValue("tipo", Tipo);
+            cmd.Parameters.AddWithValue("tamanho", Tamanho);
+            cmd.Parameters.AddWithValue("preco", Preco);
+            cmd.Connection.Close();
 
         }
-        public List<Placa> ListarPlacas()
-
+        public static Placa ObterPorId(int id)
         {
-            List<Placa> lista = new List<Placa>();
-            var cmd = banco.Abrir();
-            cmd.CommandType = System.Data.CommandType.Text;
-            var dr = cmd.ExecuteReader();
-            while (dr.Read())
-            return lista;
-        }
-        public void ConsultarPorId(int id)
-        {
-            var cmd = banco.Abrir();
-            cmd.CommandType = System.Data.CommandType.Text;
-            cmd.CommandText = "select * from placas where id = " + id;
+            Placa placa = new();
+            var cmd = Banco.Abrir();
+            cmd.CommandText = $"select * from placas whre id = {id}";
             var dr = cmd.ExecuteReader();
             while (dr.Read())
             {
-                IdPlaca = dr.GetInt32(0);
-                Tipo = dr.GetString(1);
-                Tamanho = dr.GetString(2);
-                Preco = dr.GetString(3);
-
+                placa = new(
+                    dr.GetInt32(0),
+                    dr.GetString(1),
+                    dr.GetString(2),
+                    dr.GetDouble(3)
+                    );
             }
+            return placa;
         }
+        public static List<Placa> ObterPorLista()
+        {
+            List<Placa> placas = new();
+            var cmd = Banco.Abrir();
+            cmd.CommandText = $"select * from placas ordr by descricao asc";
+            var dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                placas.Add(new(
+                    dr.GetInt32(0),
+                    dr.GetString(1),
+                    dr.GetString(2),
+                    dr.GetDouble(3)
 
-    }
-    public void Alterar(Placa placa)
-    {
-        var cmd = banco.Abrir();
-        cmd.CommandType = System.Data.CommandType.Text;
-        cmd.CommandText = "update placa set tipo='" + placa.Tipo + "', tamanho='" + placa.Tamanho + "',preco='" + placa.Preco + "'where id = +placa.Id;";
-        cmd.ExecuteNonQuery();
+                    ));
+            }
+            return placas;
+        }
+        public bool Alterar(Placa placa)
+
+        {
+            bool resposta = false;
+            var cmd = Banco.Abrir();
+            cmd.CommandType = System.Data.CommandType.Text;
+            cmd.CommandText = "placa_update";
+            cmd.Parameters.AddWithValue("idplaca", IdPlaca);
+            cmd.Parameters.AddWithValue("tipo", Tipo);
+            cmd.Parameters.AddWithValue("tamanho", Tamanho);
+            cmd.Parameters.AddWithValue("preco", Preco);
+
+            if (cmd.ExecuteNonQuery() > 0)
+            {
+                cmd.Connection.Close();
+                return true;
+            }
+            return resposta;
+        }
     }
 }

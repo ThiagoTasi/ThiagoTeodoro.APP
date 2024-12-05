@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ThiagoTeodoroClass
 {
-    public class banco
+    public class Banco
     {
         public static MySqlCommand Abrir(int cod = 0) // método para abrir conexão
         {
